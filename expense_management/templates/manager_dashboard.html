@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Manager Dashboard - {{ user.company.name }}{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Manager Dashboard</h1>
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="fas fa-clock"></i> Pending Expenses</h2>
+            </div>
+            <div class="card-body">
+                <div id="pending-expenses-list">
+                    {% for expense in pending_expenses %}
+                    <div class="expense-item card mb-3" data-expense-id="{{ expense.id }}">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h5 class="card-title">{{ expense.category.name }} - ${{ expense.amount }}</h5>
+                                    <p class="card-text">{{ expense.description }}</p>
+                                    <small class="text-muted">User: {{ expense.user.name }} | Date: {{ expense.date }}</small>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <form method="post" class="expense-action-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="expense_id" value="{{ expense.id }}">
+                                        <button type="submit" name="action" value="approve" class="btn btn-success btn-sm me-1">Approve</button>
+                                        <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">No pending expenses.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    document.querySelectorAll('.expense-action-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            fetch('', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': this.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            }).then(response => response.json()).then(data => {
+                if (data.status === 'success') {
+                    this.closest('.expense-item').remove();
+                }
+            }).catch(error => console.error('Error:', error));
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Employee Dashboard - {{ user.company.name }}{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <h1>Employee Dashboard</h1>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="fas fa-plus"></i> Add New Expense</h2>
+            </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" id="expense-form">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary btn-modern"><i class="fas fa-paper-plane"></i> Submit Expense</button>
+            </form>
+        </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <h2>Your Expenses</h2>
+        <div id="expenses-list">
+            {% for expense in expenses %}
+            <div class="expense-item card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ expense.category.name }} - ${{ expense.amount }}</h5>
+                    <p class="card-text">{{ expense.description }}</p>
+                    <small class="text-muted">Date: {{ expense.date }}</small>
+                    <br>
+                    <span class="badge bg-{% if expense.status == 'approved' %}success{% elif expense.status == 'rejected' %}danger{% else %}warning{% endif %}">{{ expense.get_status_display }}</span>
+                    {% if expense.approved_by %}
+                    <br><small>By: {{ expense.approved_by.name }}</small>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted">No expenses submitted yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    document.querySelector('#expense-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        fetch('', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        }).then(response => response.json()).then(data => {
+            const html = `<div class="expense-item card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">${data.category} - $${data.amount}</h5>
+                    <p class="card-text">${data.description}</p>
+                    <small class="text-muted">Date: ${data.date}</small>
+                    <br>
+                    <span class="badge bg-warning">${data.status}</span>
+                </div>
+            </div>`;
+            document.getElementById('expenses-list').insertAdjacentHTML('afterbegin', html);
+            this.reset();
+        }).catch(error => console.error('Error:', error));
+    });
+</script>
+{% endblock %}
